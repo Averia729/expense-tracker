@@ -21,11 +21,12 @@ textarea {
 
 .page {
   min-height: 100vh;
-  padding: 16px;
+  padding: 20px 16px 32px;
 }
 
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1180px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -62,6 +63,11 @@ h2 {
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   padding: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.equal-card {
+  height: 100%;
 }
 
 .export-panel {
@@ -102,8 +108,9 @@ h2 {
 .top-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: 0.7fr 1.3fr;
-  align-items: start;
+  grid-template-columns: minmax(320px, 400px) minmax(500px, 1fr);
+  justify-content: center;
+  align-items: stretch;
 }
 
 .category-list {
@@ -298,12 +305,7 @@ select {
 
 .drag-handle {
   color: #64748b;
-  cursor: grab;
   user-select: none;
-}
-
-.dragging {
-  opacity: 0.5;
 }
 
 .truncate {

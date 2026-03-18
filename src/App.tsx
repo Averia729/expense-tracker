@@ -24,13 +24,16 @@ const todayString = () => {
 
 const currency = (n: number) => `¥${n.toFixed(2)}`;
 
+const defaultSort = (list: Expense[]) =>
+  [...list].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+
 export default function App() {
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? defaultSort(parsed as Expense[]) : [];
     } catch {
       return [];
     }
@@ -110,12 +113,7 @@ export default function App() {
       createdAt: Date.now(),
     };
 
-    setExpenses((prev) =>
-      [newExpense, ...prev].sort(
-        (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt
-      )
-    );
-
+    setExpenses((prev) => defaultSort([newExpense, ...prev]));
     setAmount("");
     setNote("");
   };
@@ -153,6 +151,20 @@ export default function App() {
     setExpenses((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
     setSelectedIds([]);
     setShowSelectedOnly(false);
+  };
+
+  const resetToDefaultOrder = () => {
+    setExpenses((prev) => defaultSort(prev));
+  };
+
+  const sortByCategory = () => {
+    setExpenses((prev) =>
+      [...prev].sort((a, b) => {
+        const categoryCompare = a.category.localeCompare(b.category, "zh-Hans-CN");
+        if (categoryCompare !== 0) return categoryCompare;
+        return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
+      })
+    );
   };
 
   const exportJSON = () => {
@@ -218,9 +230,7 @@ export default function App() {
         }))
         .filter((item) => item.amount > 0);
 
-      setExpenses(
-        normalized.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
-      );
+      setExpenses(defaultSort(normalized));
       setSelectedIds([]);
       setShowSelectedOnly(false);
       window.alert(`导入成功，共导入 ${normalized.length} 条记录。`);
@@ -297,7 +307,7 @@ export default function App() {
         </div>
 
         <div className="top-grid">
-          <div className="card">
+          <div className="card equal-card">
             <h2>分类统计</h2>
             <div className="category-list">
               {categorySummary.length === 0 ? (
@@ -323,7 +333,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card equal-card">
             <h2>新增一笔开支</h2>
 
             <div className="form-grid">
@@ -372,6 +382,14 @@ export default function App() {
         <div className="card">
           <div className="section-head">
             <h2>开支明细</h2>
+            <div className="button-row">
+              <button className="btn btn-secondary" onClick={sortByCategory}>
+                按分类排序
+              </button>
+              <button className="btn btn-secondary" onClick={resetToDefaultOrder}>
+                恢复默认排序
+              </button>
+            </div>
           </div>
 
           <div className="toolbar">
