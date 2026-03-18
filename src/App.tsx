@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import "./styles.css";
 
 type Expense = {
   id: string;
@@ -48,6 +47,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [showExportPanel, setShowExportPanel] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -165,6 +165,32 @@ export default function App() {
         return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
       })
     );
+  };
+
+  const moveFilteredItem = (fromId: string | null, toId: string) => {
+    if (!fromId || !toId || fromId === toId) return;
+
+    const filteredIds = filteredExpenses.map((item) => item.id);
+
+    setExpenses((prev) => {
+      const prevCopy = [...prev];
+      const subset = prevCopy.filter((item) => filteredIds.includes(item.id));
+      const oldIndex = subset.findIndex((item) => item.id === fromId);
+      const newIndex = subset.findIndex((item) => item.id === toId);
+
+      if (oldIndex === -1 || newIndex === -1) return prev;
+
+      const movedItem = subset[oldIndex];
+      const newSubset = [...subset];
+      newSubset.splice(oldIndex, 1);
+      newSubset.splice(newIndex, 0, movedItem);
+
+      let subsetPointer = 0;
+
+      return prevCopy.map((item) =>
+        filteredIds.includes(item.id) ? newSubset[subsetPointer++] : item
+      );
+    });
   };
 
   const exportJSON = () => {
@@ -443,7 +469,18 @@ export default function App() {
                 </div>
 
                 {filteredExpenses.map((item) => (
-                  <div key={item.id} className="row">
+                  <div
+                    key={item.id}
+                    className={`row ${draggedId === item.id ? "dragging" : ""}`}
+                    draggable
+                    onDragStart={() => setDraggedId(item.id)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      moveFilteredItem(draggedId, item.id);
+                      setDraggedId(null);
+                    }}
+                    onDragEnd={() => setDraggedId(null)}
+                  >
                     <div>
                       <input
                         type="checkbox"
