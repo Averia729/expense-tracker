@@ -11,7 +11,24 @@ type Expense = {
 
 const STORAGE_KEY = "daily-expense-tracker-v1";
 
-const categories = ["吃饭", "交通", "日用", "娱乐", "住房", "医疗", "学习", "其他"];
+const categories = ["吃饭", "日用", "其他"];
+
+const normalizeCategory = (value: unknown) => {
+  const category = typeof value === "string" ? value.trim() : "";
+  if (categories.includes(category)) return category;
+  if (["餐饮", "早餐", "午饭", "晚饭", "夜宵", "外卖", "咖啡", "奶茶"].includes(category)) {
+    return "吃饭";
+  }
+  if (["交通", "购物", "娱乐", "住房", "医疗", "学习", "人情"].includes(category)) {
+    return "日用";
+  }
+  return "其他";
+};
+
+const normalizeExpense = (item: Expense): Expense => ({
+  ...item,
+  category: normalizeCategory(item.category),
+});
 
 const todayString = () => {
   const d = new Date();
@@ -32,7 +49,7 @@ export default function App() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? defaultSort(parsed as Expense[]) : [];
+      return Array.isArray(parsed) ? defaultSort((parsed as Expense[]).map(normalizeExpense)) : [];
     } catch {
       return [];
     }
@@ -236,18 +253,15 @@ export default function App() {
       }
 
       const normalized: Expense[] = parsed
-        .filter((item) => item && typeof item === "object")
-        .map((item: any, index: number) => ({
+        .filter((item): item is Record<string, unknown> => item !== null && typeof item === "object")
+        .map((item, index: number) => ({
           id: typeof item.id === "string" && item.id ? item.id : crypto.randomUUID(),
           date:
             typeof item.date === "string" && item.date.length >= 10
               ? item.date.slice(0, 10)
               : todayString(),
           amount: Number(item.amount) > 0 ? Number(item.amount) : 0,
-          category:
-            typeof item.category === "string" && item.category.trim()
-              ? item.category.trim()
-              : "其他",
+          category: normalizeCategory(item.category),
           note: typeof item.note === "string" ? item.note : "",
           createdAt:
             typeof item.createdAt === "number" && Number.isFinite(item.createdAt)
