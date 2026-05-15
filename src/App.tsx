@@ -372,30 +372,79 @@ export default function App() {
           </div>
         )}
 
-        <div className="stats-grid">
-          <div className="card stat-card">
-            <div className="stat-title">今日支出</div>
-            <div className="stat-value">{currency(todayTotal)}</div>
+        <div className="workbench-grid">
+          <div className="card entry-card">
+            <h2>新增一笔开支</h2>
+
+            <div className="form-grid">
+              <div className="field">
+                <label>日期</label>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>备注</label>
+                <input
+                  placeholder="例如 午饭、地铁、牙膏"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-grid">
+              <div className="field">
+                <label>分类</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {categories.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>金额</label>
+                <input
+                  type="number"
+                  placeholder="例如 18.5"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button className="btn full-width" onClick={addExpense}>
+              保存这笔开支
+            </button>
           </div>
-          <div className="card stat-card">
-            <div className="stat-title">本月支出</div>
-            <div className="stat-value">{currency(monthTotal)}</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-title">记录条数</div>
-            <div className="stat-value">{expenses.length}</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-title">当前筛选合计</div>
-            <div className="stat-value">{currency(filteredTotal)}</div>
+
+          <div className="summary-panel">
+            <div className="stats-grid compact-stats">
+              <div className="card stat-card">
+                <div className="stat-title">今日支出</div>
+                <div className="stat-value">{currency(todayTotal)}</div>
+              </div>
+              <div className="card stat-card">
+                <div className="stat-title">本月支出</div>
+                <div className="stat-value">{currency(monthTotal)}</div>
+              </div>
+              <div className="card stat-card">
+                <div className="stat-title">记录条数</div>
+                <div className="stat-value">{expenses.length}</div>
+              </div>
+              <div className="card stat-card">
+                <div className="stat-title">筛选合计</div>
+                <div className="stat-value">{currency(filteredTotal)}</div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="card analytics-card">
-          <div className="section-head">
+          <div className="section-head compact-head">
             <div>
               <h2>支出分析</h2>
-              <p className="tip">统计会跟随搜索、日期筛选和“只看已勾选项”一起变化。</p>
+              <p className="tip">统计会跟随搜索、日期筛选和“只看已勾选项”变化。</p>
             </div>
           </div>
 
@@ -470,79 +519,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="top-grid">
-          <div className="card equal-card">
-            <h2>分类统计</h2>
-            <div className="category-list">
-              {categorySummary.length === 0 ? (
-                <p className="muted">还没有符合条件的数据。</p>
-              ) : (
-                categorySummary.map(([name, total]) => {
-                  const grandTotal = filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
-                  const percent = grandTotal === 0 ? 0 : (total / grandTotal) * 100;
-
-                  return (
-                    <div key={name} className="category-item">
-                      <div className="category-row">
-                        <span>{name}</span>
-                        <strong>{currency(total)}</strong>
-                      </div>
-                      <div className="progress">
-                        <div className="progress-bar" style={{ width: `${percent}%` }} />
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="card equal-card">
-            <h2>新增一笔开支</h2>
-
-            <div className="form-grid">
-              <div className="field">
-                <label>日期</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>备注</label>
-                <input
-                  placeholder="例如 午饭、地铁、牙膏"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-grid">
-              <div className="field">
-                <label>分类</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                  {categories.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>金额</label>
-                <input
-                  type="number"
-                  placeholder="例如 18.5"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <button className="btn full-width" onClick={addExpense}>
-              保存这笔开支
-            </button>
           </div>
         </div>
 
