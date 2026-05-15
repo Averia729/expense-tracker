@@ -205,8 +205,8 @@ h2 {
 }
 
 .bar-chart-dense {
-  grid-template-columns: repeat(30, minmax(3px, 1fr));
-  gap: 3px;
+  grid-template-columns: repeat(30, minmax(4px, 1fr));
+  gap: 4px;
 }
 
 .bar-item {
@@ -254,9 +254,12 @@ h2 {
 
 .bar-chart-dense .bar-label {
   font-size: 10px;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  min-height: 12px;
+  white-space: nowrap;
+  transform: none;
+  writing-mode: horizontal-tb;
   justify-self: center;
+  color: #64748b;
 }
 
 .range-summary {

@@ -507,7 +507,7 @@ export default function App() {
                 {trendData.map((item, index) => {
                   const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
                   const showLabel =
-                    trendRange === 7 || index === 0 || index === trendData.length - 1 || index % 5 === 0;
+                    trendRange === 7 || index === 0 || index === trendData.length - 1 || (index + 1) % 7 === 0;
 
                   return (
                     <div key={item.date} className="bar-item" title={`${item.date} ${currency(item.total)}`}>
