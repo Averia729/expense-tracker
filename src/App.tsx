@@ -51,7 +51,7 @@ const dateStringFromOffset = (offset: number) => {
 
 const shortDate = (date: string) => date.slice(5).replace("-", "/");
 
-const makeTrendBuckets = (items: Expense[], range: 7 | 30) => {
+const makeTrendBuckets = (items: Expense[], range: 7 | 28) => {
   if (range === 7) {
     return Array.from({ length: 7 }, (_, index) => {
       const date = dateStringFromOffset(index - 6);
@@ -62,9 +62,9 @@ const makeTrendBuckets = (items: Expense[], range: 7 | 30) => {
     });
   }
 
-  return Array.from({ length: 5 }, (_, index) => {
-    const startOffset = -29 + index * 6;
-    const endOffset = index === 4 ? 0 : startOffset + 5;
+  return Array.from({ length: 4 }, (_, index) => {
+    const startOffset = -27 + index * 7;
+    const endOffset = index === 3 ? 0 : startOffset + 6;
     const start = dateStringFromOffset(startOffset);
     const end = dateStringFromOffset(endOffset);
     const total = items
@@ -104,7 +104,7 @@ export default function App() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [trendRange, setTrendRange] = useState<7 | 30>(7);
+  const [trendRange, setTrendRange] = useState<7 | 28>(7);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -507,7 +507,7 @@ export default function App() {
 
             <div className="chart-panel">
               <div className="panel-head">
-                <h3>最近 {trendRange} 天</h3>
+                <h3>{trendRange === 7 ? "最近 7 天" : "最近 4 周"}</h3>
                 <div className="range-toggle" aria-label="趋势范围">
                   <button
                     className={trendRange === 7 ? "active" : ""}
@@ -517,21 +517,21 @@ export default function App() {
                     7天
                   </button>
                   <button
-                    className={trendRange === 30 ? "active" : ""}
+                    className={trendRange === 28 ? "active" : ""}
                     type="button"
-                    onClick={() => setTrendRange(30)}
+                    onClick={() => setTrendRange(28)}
                   >
-                    30天
+                    4周
                   </button>
                 </div>
               </div>
-              <div className={`bar-chart ${trendRange === 30 ? "bar-chart-dense" : ""}`}>
+              <div className={`bar-chart ${trendRange === 28 ? "bar-chart-weekly" : ""}`}>
                 {trendData.map((item) => {
                   const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
 
                   return (
                     <div key={item.key} className="bar-item" title={`${item.label} ${currency(item.total)}`}>
-                      <div className="bar-value">{trendRange === 7 && item.total ? currency(item.total) : ""}</div>
+                      <div className="bar-value">{item.total ? currency(item.total) : "¥0"}</div>
                       <div className="bar-track">
                         <div className="bar-fill" style={{ height: `${height}%` }} />
                       </div>
