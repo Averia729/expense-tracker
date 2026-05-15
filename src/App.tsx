@@ -76,6 +76,7 @@ export default function App() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [trendRange, setTrendRange] = useState<7 | 30>(7);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -137,18 +138,24 @@ export default function App() {
   }, null);
   const topCategory = categorySummary[0];
 
-  const sevenDayTrend = useMemo(() => {
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = dateStringFromOffset(index - 6);
-      const total = expenses
+  const trendData = useMemo(() => {
+    return Array.from({ length: trendRange }, (_, index) => {
+      const date = dateStringFromOffset(index - trendRange + 1);
+      const total = filteredExpenses
         .filter((item) => item.date === date)
         .reduce((sum, item) => sum + item.amount, 0);
       return { date, label: shortDate(date), total };
     });
-  }, [expenses]);
+  }, [filteredExpenses, trendRange]);
 
-  const sevenDayMax = Math.max(...sevenDayTrend.map((item) => item.total), 1);
-  const sevenDayTotal = sevenDayTrend.reduce((sum, item) => sum + item.total, 0);
+  const trendMax = Math.max(...trendData.map((item) => item.total), 1);
+  const trendTotal = trendData.reduce((sum, item) => sum + item.total, 0);
+  const trendActiveDays = trendData.filter((item) => item.total > 0).length;
+  const trendAverage = trendActiveDays === 0 ? 0 : trendTotal / trendActiveDays;
+  const trendPeak = trendData.reduce((winner, item) => {
+    if (!winner || item.total > winner.total) return item;
+    return winner;
+  }, trendData[0]);
 
   const selectedTotal = useMemo(() => {
     return expenses
@@ -477,23 +484,47 @@ export default function App() {
             </div>
 
             <div className="chart-panel">
-              <h3>最近 7 天</h3>
-              <div className="bar-chart">
-                {sevenDayTrend.map((item) => {
-                  const height = item.total === 0 ? 4 : Math.max(10, (item.total / sevenDayMax) * 100);
+              <div className="panel-head">
+                <h3>最近 {trendRange} 天</h3>
+                <div className="range-toggle" aria-label="趋势范围">
+                  <button
+                    className={trendRange === 7 ? "active" : ""}
+                    type="button"
+                    onClick={() => setTrendRange(7)}
+                  >
+                    7天
+                  </button>
+                  <button
+                    className={trendRange === 30 ? "active" : ""}
+                    type="button"
+                    onClick={() => setTrendRange(30)}
+                  >
+                    30天
+                  </button>
+                </div>
+              </div>
+              <div className={`bar-chart ${trendRange === 30 ? "bar-chart-dense" : ""}`}>
+                {trendData.map((item, index) => {
+                  const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
+                  const showLabel =
+                    trendRange === 7 || index === 0 || index === trendData.length - 1 || index % 5 === 0;
 
                   return (
-                    <div key={item.date} className="bar-item">
-                      <div className="bar-value">{item.total ? currency(item.total) : "¥0"}</div>
+                    <div key={item.date} className="bar-item" title={`${item.date} ${currency(item.total)}`}>
+                      <div className="bar-value">{trendRange === 7 && item.total ? currency(item.total) : ""}</div>
                       <div className="bar-track">
                         <div className="bar-fill" style={{ height: `${height}%` }} />
                       </div>
-                      <div className="bar-label">{item.label}</div>
+                      <div className="bar-label">{showLabel ? item.label : ""}</div>
                     </div>
                   );
                 })}
               </div>
-              <p className="tip">最近 7 天合计 {currency(sevenDayTotal)}</p>
+              <div className="range-summary">
+                <span>合计 {currency(trendTotal)}</span>
+                <span>日均 {currency(trendAverage)}</span>
+                <span>峰值 {trendPeak ? `${trendPeak.label} ${currency(trendPeak.total)}` : "暂无"}</span>
+              </div>
             </div>
 
             <div className="chart-panel">
@@ -574,7 +605,7 @@ export default function App() {
             <div className="empty">还没有记录，先新增一笔吧。</div>
           ) : (
             <div className="table-wrap">
-              <div className="table min-width">
+              <div className="table">
                 <div className="table-head row">
                   <div></div>
                   <div></div>
