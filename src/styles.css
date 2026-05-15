@@ -205,8 +205,8 @@ h2 {
 }
 
 .bar-chart-dense {
-  grid-template-columns: repeat(30, minmax(4px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .bar-item {
@@ -226,7 +226,7 @@ h2 {
 }
 
 .bar-chart-dense .bar-value {
-  display: none;
+  display: block;
 }
 
 .bar-track {
@@ -253,13 +253,14 @@ h2 {
 }
 
 .bar-chart-dense .bar-label {
-  font-size: 10px;
-  min-height: 12px;
+  font-size: 11px;
+  min-height: 26px;
   white-space: nowrap;
   transform: none;
   writing-mode: horizontal-tb;
   justify-self: center;
   color: #64748b;
+  line-height: 1.2;
 }
 
 .range-summary {

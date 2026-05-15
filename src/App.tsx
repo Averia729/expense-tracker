@@ -51,6 +51,34 @@ const dateStringFromOffset = (offset: number) => {
 
 const shortDate = (date: string) => date.slice(5).replace("-", "/");
 
+const makeTrendBuckets = (items: Expense[], range: 7 | 30) => {
+  if (range === 7) {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = dateStringFromOffset(index - 6);
+      const total = items
+        .filter((item) => item.date === date)
+        .reduce((sum, item) => sum + item.amount, 0);
+      return { key: date, label: shortDate(date), total };
+    });
+  }
+
+  return Array.from({ length: 5 }, (_, index) => {
+    const startOffset = -29 + index * 6;
+    const endOffset = index === 4 ? 0 : startOffset + 5;
+    const start = dateStringFromOffset(startOffset);
+    const end = dateStringFromOffset(endOffset);
+    const total = items
+      .filter((item) => item.date >= start && item.date <= end)
+      .reduce((sum, item) => sum + item.amount, 0);
+
+    return {
+      key: `${start}-${end}`,
+      label: `${shortDate(start)}-${shortDate(end)}`,
+      total,
+    };
+  });
+};
+
 const defaultSort = (list: Expense[]) =>
   [...list].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
 
@@ -139,13 +167,7 @@ export default function App() {
   const topCategory = categorySummary[0];
 
   const trendData = useMemo(() => {
-    return Array.from({ length: trendRange }, (_, index) => {
-      const date = dateStringFromOffset(index - trendRange + 1);
-      const total = filteredExpenses
-        .filter((item) => item.date === date)
-        .reduce((sum, item) => sum + item.amount, 0);
-      return { date, label: shortDate(date), total };
-    });
+    return makeTrendBuckets(filteredExpenses, trendRange);
   }, [filteredExpenses, trendRange]);
 
   const trendMax = Math.max(...trendData.map((item) => item.total), 1);
@@ -504,18 +526,16 @@ export default function App() {
                 </div>
               </div>
               <div className={`bar-chart ${trendRange === 30 ? "bar-chart-dense" : ""}`}>
-                {trendData.map((item, index) => {
+                {trendData.map((item) => {
                   const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
-                  const showLabel =
-                    trendRange === 7 || index === 0 || index === trendData.length - 1 || (index + 1) % 7 === 0;
 
                   return (
-                    <div key={item.date} className="bar-item" title={`${item.date} ${currency(item.total)}`}>
+                    <div key={item.key} className="bar-item" title={`${item.label} ${currency(item.total)}`}>
                       <div className="bar-value">{trendRange === 7 && item.total ? currency(item.total) : ""}</div>
                       <div className="bar-track">
                         <div className="bar-fill" style={{ height: `${height}%` }} />
                       </div>
-                      <div className="bar-label">{showLabel ? item.label : ""}</div>
+                      <div className="bar-label">{item.label}</div>
                     </div>
                   );
                 })}
