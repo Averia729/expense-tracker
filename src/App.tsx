@@ -40,6 +40,17 @@ const todayString = () => {
 
 const currency = (n: number) => `¥${n.toFixed(2)}`;
 
+const dateStringFromOffset = (offset: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const shortDate = (date: string) => date.slice(5).replace("-", "/");
+
 const defaultSort = (list: Expense[]) =>
   [...list].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
 
@@ -108,6 +119,36 @@ export default function App() {
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [filteredExpenses]);
+
+  const filteredTotal = useMemo(() => {
+    return filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
+  }, [filteredExpenses]);
+
+  const activeDayCount = useMemo(() => {
+    return new Set(filteredExpenses.map((item) => item.date)).size;
+  }, [filteredExpenses]);
+
+  const averageDaily = activeDayCount === 0 ? 0 : filteredTotal / activeDayCount;
+  const averagePerExpense =
+    filteredExpenses.length === 0 ? 0 : filteredTotal / filteredExpenses.length;
+  const biggestExpense = filteredExpenses.reduce<Expense | null>((winner, item) => {
+    if (!winner || item.amount > winner.amount) return item;
+    return winner;
+  }, null);
+  const topCategory = categorySummary[0];
+
+  const sevenDayTrend = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = dateStringFromOffset(index - 6);
+      const total = expenses
+        .filter((item) => item.date === date)
+        .reduce((sum, item) => sum + item.amount, 0);
+      return { date, label: shortDate(date), total };
+    });
+  }, [expenses]);
+
+  const sevenDayMax = Math.max(...sevenDayTrend.map((item) => item.total), 1);
+  const sevenDayTotal = sevenDayTrend.reduce((sum, item) => sum + item.total, 0);
 
   const selectedTotal = useMemo(() => {
     return expenses
@@ -343,6 +384,92 @@ export default function App() {
           <div className="card stat-card">
             <div className="stat-title">记录条数</div>
             <div className="stat-value">{expenses.length}</div>
+          </div>
+          <div className="card stat-card">
+            <div className="stat-title">当前筛选合计</div>
+            <div className="stat-value">{currency(filteredTotal)}</div>
+          </div>
+        </div>
+
+        <div className="card analytics-card">
+          <div className="section-head">
+            <div>
+              <h2>支出分析</h2>
+              <p className="tip">统计会跟随搜索、日期筛选和“只看已勾选项”一起变化。</p>
+            </div>
+          </div>
+
+          <div className="analytics-grid">
+            <div className="chart-panel">
+              <h3>分类占比</h3>
+              <div className="category-list compact">
+                {categorySummary.length === 0 ? (
+                  <p className="muted">暂无可统计的分类。</p>
+                ) : (
+                  categorySummary.map(([name, total]) => {
+                    const percent = filteredTotal === 0 ? 0 : (total / filteredTotal) * 100;
+
+                    return (
+                      <div key={name} className="category-item">
+                        <div className="category-row">
+                          <span>{name}</span>
+                          <strong>
+                            {currency(total)} · {percent.toFixed(0)}%
+                          </strong>
+                        </div>
+                        <div className="progress">
+                          <div className="progress-bar" style={{ width: `${percent}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="chart-panel">
+              <h3>最近 7 天</h3>
+              <div className="bar-chart">
+                {sevenDayTrend.map((item) => {
+                  const height = item.total === 0 ? 4 : Math.max(10, (item.total / sevenDayMax) * 100);
+
+                  return (
+                    <div key={item.date} className="bar-item">
+                      <div className="bar-value">{item.total ? currency(item.total) : "¥0"}</div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ height: `${height}%` }} />
+                      </div>
+                      <div className="bar-label">{item.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="tip">最近 7 天合计 {currency(sevenDayTotal)}</p>
+            </div>
+
+            <div className="chart-panel">
+              <h3>关键指标</h3>
+              <div className="insight-list">
+                <div className="insight-item">
+                  <span>日均支出</span>
+                  <strong>{currency(averageDaily)}</strong>
+                </div>
+                <div className="insight-item">
+                  <span>单笔均值</span>
+                  <strong>{currency(averagePerExpense)}</strong>
+                </div>
+                <div className="insight-item">
+                  <span>最大单笔</span>
+                  <strong>{biggestExpense ? currency(biggestExpense.amount) : "¥0.00"}</strong>
+                  <em>{biggestExpense ? `${biggestExpense.date} ${biggestExpense.note || biggestExpense.category}` : "暂无"}</em>
+                </div>
+                <div className="insight-item">
+                  <span>最高分类</span>
+                  <strong>{topCategory ? topCategory[0] : "暂无"}</strong>
+                  <em>{topCategory ? currency(topCategory[1]) : "暂无数据"}</em>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

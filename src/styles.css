@@ -28,7 +28,7 @@ textarea {
 }
 
 .container {
-  width: min(58vw, 860px);
+  width: min(78vw, 1120px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -94,7 +94,7 @@ h2 {
   width: 100%;
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .stat-card {
@@ -111,6 +111,119 @@ h2 {
 .stat-value {
   font-size: 24px;
   font-weight: 700;
+}
+
+.analytics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1.2fr 0.9fr;
+  gap: 16px;
+}
+
+.chart-panel {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.chart-panel h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.compact {
+  gap: 12px;
+}
+
+.bar-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  min-height: 190px;
+}
+
+.bar-item {
+  display: grid;
+  grid-template-rows: 34px 118px 18px;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+  align-items: end;
+}
+
+.bar-value {
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.bar-track {
+  width: 100%;
+  height: 118px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 8px 8px 0 0;
+  background: #0f766e;
+}
+
+.bar-label {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.insight-item {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: baseline;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.insight-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.insight-item span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.insight-item strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.insight-item em {
+  grid-column: 2;
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .top-grid {
@@ -337,7 +450,15 @@ textarea {
 
 @media (max-width: 1200px) {
   .container {
-    width: min(68vw, 860px);
+    width: min(88vw, 1120px);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
   }
 }
 
