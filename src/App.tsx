@@ -13,16 +13,14 @@ const STORAGE_KEY = "daily-expense-tracker-v1";
 const LOCAL_BACKUP_ENDPOINT = "http://127.0.0.1:46729/backup";
 
 const categories = ["吃饭", "日用", "其他"];
+const legacyFoodCategories = ["餐饮", "早餐", "午饭", "晚饭", "夜宵", "外卖", "咖啡", "奶茶"];
+const legacyDailyCategories = ["交通", "购物", "娱乐", "住房", "医疗", "学习", "人情"];
 
 const normalizeCategory = (value: unknown) => {
   const category = typeof value === "string" ? value.trim() : "";
   if (categories.includes(category)) return category;
-  if (["餐饮", "早餐", "午饭", "晚饭", "夜宵", "外卖", "咖啡", "奶茶"].includes(category)) {
-    return "吃饭";
-  }
-  if (["交通", "购物", "娱乐", "住房", "医疗", "学习", "人情"].includes(category)) {
-    return "日用";
-  }
+  if (legacyFoodCategories.includes(category) || category.includes("饭")) return "吃饭";
+  if (legacyDailyCategories.includes(category)) return "日用";
   return "其他";
 };
 
@@ -122,11 +120,13 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ records: expenses }),
       signal: controller.signal,
-    }).catch(() => {
-      // The local backup helper is optional; the app should stay quiet if it is not running.
-    }).finally(() => {
-      window.clearTimeout(timeout);
-    });
+    })
+      .catch(() => {
+        // Local backup is optional, so the app stays quiet when the helper is closed.
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
+      });
 
     return () => {
       controller.abort();
@@ -136,15 +136,14 @@ export default function App() {
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((item) => {
+      const query = search.toLowerCase();
       const matchesSearch =
-        !search ||
-        item.category.includes(search) ||
-        item.note.toLowerCase().includes(search.toLowerCase()) ||
-        String(item.amount).includes(search);
-
+        !query ||
+        item.category.toLowerCase().includes(query) ||
+        item.note.toLowerCase().includes(query) ||
+        String(item.amount).includes(query);
       const matchesDate = !filterDate || item.date === filterDate;
       const matchesSelected = !showSelectedOnly || selectedIds.includes(item.id);
-
       return matchesSearch && matchesDate && matchesSelected;
     });
   }, [expenses, search, filterDate, showSelectedOnly, selectedIds]);
@@ -295,7 +294,6 @@ export default function App() {
       newSubset.splice(newIndex, 0, movedItem);
 
       let subsetPointer = 0;
-
       return prevCopy.map((item) =>
         filteredIds.includes(item.id) ? newSubset[subsetPointer++] : item
       );
@@ -374,77 +372,36 @@ export default function App() {
   };
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="topbar">
-          <div>
-            <h1>每日开支记录</h1>
-            <p className="subtitle">每天随手记账，自动统计与筛选。</p>
-          </div>
-
-          <div className="button-row">
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={importJSON}
-            />
-            <button className="btn btn-secondary" onClick={triggerImport}>
-              导入数据
-            </button>
-            <button className="btn" onClick={exportJSON}>
-              导出数据
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowExportPanel((prev) => !prev)}
-            >
-              {showExportPanel ? "收起导出面板" : "显示导出面板"}
-            </button>
-          </div>
+    <main className="page">
+      <section className="hero-shell">
+        <div className="hero-copy">
+          <span className="eyebrow">Personal Ledger</span>
+          <h1>每日开支记账</h1>
         </div>
 
-        {showExportPanel && (
-          <div className="card export-panel">
-            <div className="section-head">
-              <h2>导出数据面板</h2>
-              <div className="button-row">
-                <button className="btn btn-secondary" onClick={copyExportText}>
-                  复制 JSON
-                </button>
-                <button className="btn" onClick={exportJSON}>
-                  再试一次下载
-                </button>
-              </div>
-            </div>
-            <p className="tip">如果下载被拦截，可以复制下面内容并保存为 .json 文件。</p>
-            <textarea className="export-textarea" readOnly value={exportText} />
-          </div>
-        )}
+        <div className="hero-note" aria-label="页面重点">
+          <span>快速录入</span>
+          <span>实时统计</span>
+          <span>明细筛选</span>
+        </div>
+      </section>
 
-        <div className="workbench-grid">
+      <div className="container">
+        <section className="workbench-grid">
           <div className="card entry-card">
-            <h2>新增一笔开支</h2>
-
-            <div className="form-grid">
-              <div className="field">
-                <label>日期</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>备注</label>
-                <input
-                  placeholder="例如 午饭、地铁、牙膏"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
+            <div className="section-head">
+              <div>
+                <h2>新增一笔</h2>
               </div>
             </div>
 
             <div className="form-grid">
-              <div className="field">
-                <label>分类</label>
+              <label className="field">
+                <span>日期</span>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </label>
+              <label className="field">
+                <span>分类</span>
                 <select value={category} onChange={(e) => setCategory(e.target.value)}>
                   {categories.map((item) => (
                     <option key={item} value={item}>
@@ -452,152 +409,205 @@ export default function App() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="field">
-                <label>金额</label>
+              </label>
+            </div>
+
+            <div className="form-grid">
+              <label className="field">
+                <span>金额</span>
                 <input
                   type="number"
-                  placeholder="例如 18.5"
+                  min="0"
+                  step="0.01"
+                  placeholder="例如 18.50"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
-              </div>
+              </label>
+              <label className="field">
+                <span>备注</span>
+                <input
+                  placeholder="例如 午饭、地铁、牙膏"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </label>
             </div>
 
-            <button className="btn full-width" onClick={addExpense}>
+            <button className="btn btn-primary full-width" onClick={addExpense}>
               保存这笔开支
             </button>
           </div>
 
-          <div className="summary-panel">
-            <div className="stats-grid compact-stats">
-              <div className="card stat-card">
-                <div className="stat-title">今日支出</div>
-                <div className="stat-value">{currency(todayTotal)}</div>
-              </div>
-              <div className="card stat-card">
-                <div className="stat-title">本月支出</div>
-                <div className="stat-value">{currency(monthTotal)}</div>
-              </div>
-              <div className="card stat-card">
-                <div className="stat-title">记录条数</div>
-                <div className="stat-value">{expenses.length}</div>
-              </div>
-              <div className="card stat-card">
-                <div className="stat-title">筛选合计</div>
-                <div className="stat-value">{currency(filteredTotal)}</div>
-              </div>
+          <div className="stats-grid">
+            <div className="metric-card metric-primary">
+              <span>今日</span>
+              <strong>{currency(todayTotal)}</strong>
+            </div>
+            <div className="metric-card">
+              <span>本月</span>
+              <strong>{currency(monthTotal)}</strong>
+            </div>
+            <div className="metric-card">
+              <span>记录数</span>
+              <strong>{expenses.length}</strong>
+            </div>
+            <div className="metric-card">
+              <span>筛选合计</span>
+              <strong>{currency(filteredTotal)}</strong>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="card analytics-card">
-          <div className="section-head compact-head">
-            <div>
-              <h2>支出分析</h2>
-              <p className="tip">统计会跟随搜索、日期筛选和“只看已勾选项”变化。</p>
+        <section className="analytics-grid">
+          <div className="card chart-panel">
+            <div className="panel-head">
+              <h2>分类占比</h2>
+              <span className="chip">{filteredExpenses.length} 条</span>
             </div>
-          </div>
-
-          <div className="analytics-grid">
-            <div className="chart-panel">
-              <h3>分类占比</h3>
-              <div className="category-list compact">
-                {categorySummary.length === 0 ? (
-                  <p className="muted">暂无可统计的分类。</p>
-                ) : (
-                  categorySummary.map(([name, total]) => {
-                    const percent = filteredTotal === 0 ? 0 : (total / filteredTotal) * 100;
-
-                    return (
-                      <div key={name} className="category-item">
-                        <div className="category-row">
-                          <span>{name}</span>
-                          <strong>
-                            {currency(total)} · {percent.toFixed(0)}%
-                          </strong>
-                        </div>
-                        <div className="progress">
-                          <div className="progress-bar" style={{ width: `${percent}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <div className="chart-panel">
-              <div className="panel-head">
-                <h3>{trendRange === 7 ? "最近 7 天" : "最近 4 周"}</h3>
-                <div className="range-toggle" aria-label="趋势范围">
-                  <button
-                    className={trendRange === 7 ? "active" : ""}
-                    type="button"
-                    onClick={() => setTrendRange(7)}
-                  >
-                    7天
-                  </button>
-                  <button
-                    className={trendRange === 28 ? "active" : ""}
-                    type="button"
-                    onClick={() => setTrendRange(28)}
-                  >
-                    4周
-                  </button>
-                </div>
-              </div>
-              <div className={`bar-chart ${trendRange === 28 ? "bar-chart-weekly" : ""}`}>
-                {trendData.map((item) => {
-                  const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
+            <div className="category-list">
+              {categorySummary.length === 0 ? (
+                <p className="empty-state">暂无可统计的数据。</p>
+              ) : (
+                categorySummary.map(([name, total]) => {
+                  const percent = filteredTotal === 0 ? 0 : (total / filteredTotal) * 100;
 
                   return (
-                    <div key={item.key} className="bar-item" title={`${item.label} ${currency(item.total)}`}>
-                      <div className="bar-value">{item.total ? currency(item.total) : "¥0"}</div>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ height: `${height}%` }} />
+                    <div key={name} className="category-item">
+                      <div className="category-row">
+                        <span>{name}</span>
+                        <strong>
+                          {currency(total)} · {percent.toFixed(0)}%
+                        </strong>
                       </div>
-                      <div className="bar-label">{item.label}</div>
+                      <div className="progress">
+                        <div className="progress-bar" style={{ width: `${percent}%` }} />
+                      </div>
                     </div>
                   );
-                })}
-              </div>
-              <div className="range-summary">
-                <span>合计 {currency(trendTotal)}</span>
-                <span>日均 {currency(trendAverage)}</span>
-                <span>峰值 {trendPeak ? `${trendPeak.label} ${currency(trendPeak.total)}` : "暂无"}</span>
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="card chart-panel trend-card">
+            <div className="panel-head">
+              <h2>{trendRange === 7 ? "最近 7 天" : "最近 4 周"}</h2>
+              <div className="range-toggle" aria-label="趋势范围">
+                <button
+                  className={trendRange === 7 ? "active" : ""}
+                  type="button"
+                  onClick={() => setTrendRange(7)}
+                >
+                  7天
+                </button>
+                <button
+                  className={trendRange === 28 ? "active" : ""}
+                  type="button"
+                  onClick={() => setTrendRange(28)}
+                >
+                  4周
+                </button>
               </div>
             </div>
+            <div className={`bar-chart ${trendRange === 28 ? "bar-chart-weekly" : ""}`}>
+              {trendData.map((item) => {
+                const height = item.total === 0 ? 4 : Math.max(10, (item.total / trendMax) * 100);
 
-            <div className="chart-panel">
-              <h3>关键指标</h3>
-              <div className="insight-list">
-                <div className="insight-item">
-                  <span>日均支出</span>
-                  <strong>{currency(averageDaily)}</strong>
-                </div>
-                <div className="insight-item">
-                  <span>单笔均值</span>
-                  <strong>{currency(averagePerExpense)}</strong>
-                </div>
-                <div className="insight-item">
-                  <span>最大单笔</span>
-                  <strong>{biggestExpense ? currency(biggestExpense.amount) : "¥0.00"}</strong>
-                  <em>{biggestExpense ? `${biggestExpense.date} ${biggestExpense.note || biggestExpense.category}` : "暂无"}</em>
-                </div>
-                <div className="insight-item">
-                  <span>最高分类</span>
-                  <strong>{topCategory ? topCategory[0] : "暂无"}</strong>
-                  <em>{topCategory ? currency(topCategory[1]) : "暂无数据"}</em>
-                </div>
+                return (
+                  <div key={item.key} className="bar-item" title={`${item.label} ${currency(item.total)}`}>
+                    <div className="bar-value">{item.total ? currency(item.total) : "¥0"}</div>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ height: `${height}%` }} />
+                    </div>
+                    <div className="bar-label">{item.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="range-summary">
+              <span>合计 {currency(trendTotal)}</span>
+              <span>日均 {currency(trendAverage)}</span>
+              <span>峰值 {trendPeak ? `${trendPeak.label} ${currency(trendPeak.total)}` : "暂无"}</span>
+            </div>
+          </div>
+
+          <div className="card chart-panel">
+            <div className="panel-head">
+              <h2>关键指标</h2>
+            </div>
+            <div className="insight-list">
+              <div className="insight-item">
+                <span>日均支出</span>
+                <strong>{currency(averageDaily)}</strong>
+              </div>
+              <div className="insight-item">
+                <span>单笔均值</span>
+                <strong>{currency(averagePerExpense)}</strong>
+              </div>
+              <div className="insight-item">
+                <span>最大单笔</span>
+                <strong>{biggestExpense ? currency(biggestExpense.amount) : "¥0.00"}</strong>
+                <em>{biggestExpense ? `${biggestExpense.date} ${biggestExpense.note || biggestExpense.category}` : "暂无"}</em>
+              </div>
+              <div className="insight-item">
+                <span>最高分类</span>
+                <strong>{topCategory ? topCategory[0] : "暂无"}</strong>
+                <em>{topCategory ? currency(topCategory[1]) : "暂无数据"}</em>
               </div>
             </div>
           </div>
+        </section>
+
+        <div className="action-strip">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={importJSON}
+          />
+          <button className="btn btn-secondary" onClick={triggerImport}>
+            导入数据
+          </button>
+          <button className="btn" onClick={exportJSON}>
+            导出数据
+          </button>
+          <button className="btn btn-ghost" onClick={() => setShowExportPanel((prev) => !prev)}>
+            {showExportPanel ? "收起备份面板" : "查看备份文本"}
+          </button>
         </div>
 
-        <div className="card">
+        {showExportPanel && (
+          <section className="card export-panel">
+            <div className="section-head">
+              <div>
+                <h2>备份文本</h2>
+                <p className="tip">下载受限时，可以复制下面的 JSON 内容保存。</p>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-secondary" onClick={copyExportText}>
+                  复制 JSON
+                </button>
+                <button className="btn" onClick={exportJSON}>
+                  重新下载
+                </button>
+              </div>
+            </div>
+            <textarea className="export-textarea" readOnly value={exportText} />
+          </section>
+        )}
+
+        <section className="card ledger-card">
           <div className="section-head">
-            <h2>开支明细</h2>
+            <div>
+              <h2>开支明细</h2>
+              <p className="tip">
+                当前显示 <strong>{filteredExpenses.length}</strong> 条，已选择{" "}
+                <strong>{selectedIds.length}</strong> 条，合计{" "}
+                <strong>{currency(selectedTotal)}</strong>
+              </p>
+            </div>
             <div className="button-row">
               <button className="btn btn-secondary" onClick={sortByCategory}>
                 按分类排序
@@ -609,42 +619,29 @@ export default function App() {
           </div>
 
           <div className="toolbar">
-            <div className="toolbar-info">
-              当前显示 <strong>{filteredExpenses.length}</strong> 条，已选{" "}
-              <strong>{selectedIds.length}</strong> 项，合计{" "}
-              <strong>{currency(selectedTotal)}</strong>
+            <div className="filter-grid">
+              <input
+                placeholder="搜索分类、备注、金额"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
             </div>
             <div className="button-row">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowSelectedOnly((prev) => !prev)}
-              >
-                {showSelectedOnly ? "显示全部" : "只看已勾选项"}
+              <button className="btn btn-ghost" onClick={() => setShowSelectedOnly((prev) => !prev)}>
+                {showSelectedOnly ? "显示全部" : "只看已选"}
               </button>
-              <button className="btn btn-secondary" onClick={toggleSelectAllFiltered}>
-                {allFilteredSelected ? "清空勾选" : "全选当前列表"}
+              <button className="btn btn-ghost" onClick={toggleSelectAllFiltered}>
+                {allFilteredSelected ? "清空当前选择" : "全选当前列表"}
               </button>
-              <button
-                className="btn btn-danger"
-                onClick={removeSelectedExpenses}
-                disabled={selectedIds.length === 0}
-              >
-                删除勾选项
+              <button className="btn btn-danger" onClick={removeSelectedExpenses} disabled={selectedIds.length === 0}>
+                删除已选
               </button>
             </div>
-          </div>
-
-          <div className="filter-grid">
-            <input
-              placeholder="搜索分类、备注、金额"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
           </div>
 
           {filteredExpenses.length === 0 ? (
-            <div className="empty">还没有记录，先新增一笔吧。</div>
+            <div className="empty-state large">还没有记录，先新增一笔吧。</div>
           ) : (
             <div className="table-wrap">
               <div className="table">
@@ -673,23 +670,23 @@ export default function App() {
                   >
                     <div>
                       <input
+                        aria-label={`选择 ${item.date} ${item.category}`}
                         type="checkbox"
                         checked={selectedIds.includes(item.id)}
                         onChange={() => toggleSelect(item.id)}
                       />
                     </div>
-                    <div className="drag-handle">≡</div>
+                    <div className="drag-handle" aria-hidden="true">
+                      ::
+                    </div>
                     <div>{item.date}</div>
                     <div>
                       <span className="tag">{item.category}</span>
                     </div>
-                    <div className="truncate">{item.note || ""}</div>
-                    <div className="text-right">{currency(item.amount)}</div>
+                    <div className="truncate">{item.note || "未填写备注"}</div>
+                    <div className="text-right amount">{currency(item.amount)}</div>
                     <div className="text-right">
-                      <button
-                        className="btn btn-danger btn-small"
-                        onClick={() => removeExpense(item.id)}
-                      >
+                      <button className="btn btn-danger btn-small" onClick={() => removeExpense(item.id)}>
                         删除
                       </button>
                     </div>
@@ -698,8 +695,8 @@ export default function App() {
               </div>
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
