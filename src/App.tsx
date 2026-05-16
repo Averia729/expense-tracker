@@ -10,6 +10,7 @@ type Expense = {
 };
 
 const STORAGE_KEY = "daily-expense-tracker-v1";
+const LOCAL_BACKUP_ENDPOINT = "http://127.0.0.1:46729/backup";
 
 const categories = ["吃饭", "日用", "其他"];
 
@@ -110,6 +111,27 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  }, [expenses]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 1200);
+
+    fetch(LOCAL_BACKUP_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ records: expenses }),
+      signal: controller.signal,
+    }).catch(() => {
+      // The local backup helper is optional; the app should stay quiet if it is not running.
+    }).finally(() => {
+      window.clearTimeout(timeout);
+    });
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
   }, [expenses]);
 
   const filteredExpenses = useMemo(() => {
